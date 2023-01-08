@@ -51,9 +51,7 @@ export const getVirtualFileSystemFromDirPath = async (
   const filePaths = await getMatchingFilePaths(opts)
   const vfs: Record<Path, Content> = {}
   for (const filePath of filePaths) {
-    vfs[filePath] = await fs.readFile(path.resolve(dirPath, filePath), {
-      encoding: contentFormat === "string" ? "utf8" : "binary",
-    })
+    vfs[filePath] = await fs.readFile(path.resolve(dirPath, filePath))
   }
   return vfs
 }

@@ -1,4 +1,4 @@
-import { getVirtualFilesystemModuleFromDirPath } from "index"
+import { getVirtualFilesystemModuleFromDirPath } from "./index"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 
@@ -38,6 +38,11 @@ async function main() {
   let dir: string = argv.dir ?? argv._[0]
   let outfile: string = argv.outfile ?? argv._[0]
 
+  if (!dir || !outfile) {
+    console.log("Missing dir and/or outfile, use --help for usage")
+    process.exit(1)
+  }
+
   let extensions: string[] | undefined = undefined
   if (argv.extensions) extensions = argv.extensions.split(",")
 
@@ -49,7 +54,7 @@ async function main() {
       extensions,
       contentFormat: argv.contentFormat,
       targetPath: outfile,
-      noImportExt: argv.noImportExt,
+      noImportExt: !argv.importExt,
     })
   )
 }
