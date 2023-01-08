@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { getVirtualFilesystemModuleFromDirPath } from "./index"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
