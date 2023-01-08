@@ -1,6 +1,9 @@
 import { getVirtualFilesystemModuleFromDirPath } from "./index"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
+import * as fs from "fs/promises"
+import mkdirp from "mkdirp"
+import path from "path"
 
 const argv = yargs(hideBin(process.argv))
   .option("dir", {
@@ -46,9 +49,9 @@ async function main() {
   let extensions: string[] | undefined = undefined
   if (argv.extensions) extensions = argv.extensions.split(",")
 
-  console.log(argv)
-
-  console.log(
+  await mkdirp(path.dirname(outfile))
+  await fs.writeFile(
+    outfile,
     await getVirtualFilesystemModuleFromDirPath({
       dirPath: dir,
       extensions,

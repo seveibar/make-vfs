@@ -1,12 +1,12 @@
 {
   "name": "make-vfs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "bin": "dist/cli.js",
   "repository": "https://github.com/seveibar/make-vfs.git",
   "scripts": {
-    "build": "yarn run esbuild --platform=node --target=node16 --format=cjs ./src/* --outdir=dist --sourcemap",
+    "build": "tsup ./src --sourcemap --dts",
     "test": "ava"
   },
   "keywords": [
@@ -35,6 +35,8 @@
     "glob-promise": "^6.0.1",
     "mkdirp": "^1.0.4",
     "mock-fs": "^5.2.0",
+    "tsup": "^6.5.0",
+    "typescript": "^4.9.4",
     "yargs": "^17.6.2"
   }
 }
