@@ -29,6 +29,10 @@ const argv = yargs(hideBin(process.argv))
     default: "buffer",
     description: "The format to store files in the vfs module.",
   })
+  .option("verbose", {
+    type: "boolean",
+    default: false,
+  })
   .example(
     "make-vfs ./migrations --extensions sql --content-format=string ./migrations.ts",
     "Put all your migrations into a typescript module"
@@ -40,7 +44,7 @@ const argv = yargs(hideBin(process.argv))
 
 async function main() {
   let dir: string = argv.dir ?? argv._[0]
-  let outfile: string = argv.outfile ?? argv._[0]
+  let outfile: string = argv.outfile ?? argv._[1]
 
   if (!dir || !outfile) {
     console.log("Missing dir and/or outfile, use --help for usage")
@@ -50,17 +54,19 @@ async function main() {
   let extensions: string[] | undefined = undefined
   if (argv.extensions) extensions = argv.extensions.split(",")
 
+  const opts = {
+    dirPath: dir,
+    extensions,
+    contentFormat: argv.contentFormat,
+    targetPath: outfile,
+    noImportExt: !argv.importExt,
+  }
+  if (argv.verbose) {
+    console.log(opts)
+  }
+
   await mkdirp(path.dirname(outfile))
-  await fs.writeFile(
-    outfile,
-    await getVirtualFilesystemModuleFromDirPath({
-      dirPath: dir,
-      extensions,
-      contentFormat: argv.contentFormat,
-      targetPath: outfile,
-      noImportExt: !argv.importExt,
-    })
-  )
+  await fs.writeFile(outfile, await getVirtualFilesystemModuleFromDirPath(opts))
 }
 
 main()
