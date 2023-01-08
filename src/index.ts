@@ -5,6 +5,15 @@ import prettier from "prettier"
 import { existsSync } from "fs"
 import fs from "fs/promises"
 
+const charsSafeToLeaveEncoded = "{}.,<>?/:'[]!@#$^&*() -_=+".split("")
+const replaceSafeEncodedChars = (s: string) => {
+  for (const char of charsSafeToLeaveEncoded) {
+    if (char === encodeURIComponent(char)) continue
+    s = s.replace(new RegExp(encodeURIComponent(char), "g"), char)
+  }
+  return s
+}
+
 type Path = string
 type Content = Buffer | ArrayBuffer | string
 type ContentFormat =
@@ -72,8 +81,8 @@ export const getVirtualFilesystemModuleFromDirPath = async (
           .map(([path, content]) =>
             cf === "buffer"
               ? `  "${path}": Buffer.from("${content.toString("base64")}")`
-              : `  "${path}": decodeURIComponent("${encodeURIComponent(
-                  content.toString()
+              : `  "${path}": decodeURIComponent("${replaceSafeEncodedChars(
+                  encodeURIComponent(content.toString())
                 )}")`
           )
           .join(",\n") +
