@@ -6,10 +6,11 @@ import { existsSync } from "fs"
 import fs from "fs/promises"
 
 type Path = string
-type Content = Buffer | string
+type Content = Buffer | ArrayBuffer | string
 type ContentFormat =
   | "buffer"
   | "string"
+  | "arraybuffer"
   | "import-star"
   | "import-default"
   | "require"
@@ -71,9 +72,9 @@ export const getVirtualFilesystemModuleFromDirPath = async (
           .map(([path, content]) =>
             cf === "buffer"
               ? `  "${path}": Buffer.from("${content.toString("base64")}")`
-              : `  "${path}": Buffer.from("${content.toString(
-                  "base64"
-                )}", "utf8")`
+              : `  "${path}": decodeURIComponent("${encodeURIComponent(
+                  content.toString()
+                )}")`
           )
           .join(",\n") +
         `\n}`
@@ -108,6 +109,9 @@ export const getVirtualFilesystemModuleFromDirPath = async (
         fps.map((fp) => `  "${fp}": ${idsafe(fp)}`).join(",\n") +
         `\n}`
       )
+    }
+    case "arraybuffer": {
+      throw new Error(`arraybuffer not yet implemented, contributions welcome`)
     }
   }
   throw new Error(`Unknown content format: ${cf}`)
