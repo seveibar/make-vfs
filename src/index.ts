@@ -62,6 +62,9 @@ export const getVirtualFileSystemFromDirPath = async (
   const vfs: Record<Path, Content> = {}
   for (const filePath of filePaths) {
     vfs[filePath] = await fs.readFile(path.resolve(dirPath, filePath))
+    if (contentFormat === "string") {
+      vfs[filePath] = vfs[filePath].toString()
+    }
   }
   return vfs
 }
