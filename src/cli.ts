@@ -25,7 +25,14 @@ const argv = yargs(hideBin(process.argv))
   })
   .option("content-format", {
     type: "string",
-    choices: ["buffer", "string", "import-star", "import-default", "require"],
+    choices: [
+      "buffer",
+      "string",
+      "import-star",
+      "import-default",
+      "require",
+      "export-pathlist",
+    ],
     default: "buffer",
     description: "The format to store files in the vfs module.",
   })
