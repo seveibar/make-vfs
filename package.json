@@ -1,6 +1,6 @@
 {
   "name": "make-vfs",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "",
   "main": "dist/index.js",
   "bin": "dist/cli.js",
@@ -19,9 +19,7 @@
   "author": "Severin Ibarluzea <os@seve.blog>",
   "license": "ISC",
   "devDependencies": {
-    "prettier": "^2.8.2"
-  },
-  "dependencies": {
+    "prettier": "^2.8.2",
     "@types/mkdirp": "^1.0.2",
     "@types/mock-fs": "^4.13.1",
     "@types/node": "^18.11.18",
