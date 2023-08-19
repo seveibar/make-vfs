@@ -23,6 +23,7 @@ type ContentFormat =
   | "import-star"
   | "import-default"
   | "require"
+  | "export-pathlist"
 
 interface SearchOpts {
   dirPath: string
@@ -124,6 +125,15 @@ export const getVirtualFilesystemModuleFromDirPath = async (
     }
     case "arraybuffer": {
       throw new Error(`arraybuffer not yet implemented, contributions welcome`)
+    }
+    case "export-pathlist": {
+      return (
+        `export default [\n` +
+        Object.keys(vfs)
+          .map((path) => `  "${path}"`)
+          .join(",\n") +
+        `\n]`
+      )
     }
   }
   throw new Error(`Unknown content format: ${cf}`)
