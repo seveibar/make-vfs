@@ -84,7 +84,7 @@ export const getVirtualFilesystemModuleFromDirPath = async (
         Object.entries(vfs)
           .map(([path, content]) =>
             cf === "buffer"
-              ? `  "${path}": Buffer.from("${content.toString("base64")}")`
+              ? `  "${path}": Buffer.from("${content.toString("base64")}", "base64")`
               : `  "${path}": decodeURIComponent("${replaceSafeEncodedChars(
                   encodeURIComponent(content.toString())
                 )}")`
