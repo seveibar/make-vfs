@@ -54,7 +54,6 @@ import * as _api_health from "./../routes/api/health"
 export default {
   "api/dev_package_examples/create": _api_dev_package_examples_create,
   "api/dev_package_examples/get": _api_dev_package_examples_get,
-  "api/dev_package_examples/list": _api_dev_package_examples_list,
   "api/health": _api_health
 }
 ```
