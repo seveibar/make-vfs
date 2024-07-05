@@ -41,7 +41,7 @@ To do this, you can add an npm script `build:routes` that generates a `static-ro
 that imports all your route files. The script can be defined as...
 
 ```
-bunx make-vfs --dir ./routes --content-format import-star --outfile static-routes.js
+make-vfs --dir ./routes --content-format import-star --outfile static-routes.js
 ```
 
 It will generate something like:
