@@ -32,6 +32,35 @@ Examples:
   --no-import-ext
 ```
 
+### Statically Bundling Routes
+
+A common use-case for `make-vfs` is to statically bundle all the routes in a directory so that
+a server can be packaged without needing to do runtime filesystem operations.
+
+To do this, you can add an npm script `build:routes` that generates a `static-routes.ts` file
+that imports all your route files. The script can be defined as...
+
+```
+bunx make-vfs --dir ./routes --content-format import-star --outfile static-routes.js
+```
+
+It will generate something like:
+
+```ts
+import * as _api_dev_package_examples_create from "./../routes/api/dev_package_examples/create"
+import * as _api_dev_package_examples_get from "./../routes/api/dev_package_examples/get"
+import * as _api_health from "./../routes/api/health"
+
+export default {
+  "api/dev_package_examples/create": _api_dev_package_examples_create,
+  "api/dev_package_examples/get": _api_dev_package_examples_get,
+  "api/dev_package_examples/list": _api_dev_package_examples_list,
+  "api/health": _api_health
+}
+```
+
+You can now use your routes statically.
+
 ### Usage as Library
 
 ```ts
