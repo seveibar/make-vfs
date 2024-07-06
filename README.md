@@ -41,7 +41,7 @@ To do this, you can add an npm script `build:routes` that generates a `static-ro
 that imports all your route files. The script can be defined as...
 
 ```
-make-vfs --dir ./routes --content-format import-star --outfile static-routes.js
+make-vfs --dir ./routes --content-format import-star --outfile static-routes.ts
 ```
 
 It will generate something like:
@@ -58,7 +58,61 @@ export default {
 }
 ```
 
-You can now use your routes statically.
+You can now use your routes statically, e.g. here's a simple web server using bun using the
+statically generated routes:
+
+```ts
+// server.ts
+import staticRoutes from "./static-routes"
+
+Bun.serve({
+  fetch(req) {
+    const url = new URL(req.url);
+    const path = url.pathname.slice(1); // Remove leading slash
+    
+    if (!(path in staticRoutes)) {
+      return new Response("Not found", { status: 404 });
+    }
+
+    const route = staticRoutes[path]
+    return route.default(req)
+  },
+  port: 3000,
+})
+```
+
+> [!NOTE]
+> An example of a route file would be something like:
+> ```ts
+> export default (req) => {
+>   return new Response("hello world!")
+> }
+
+
+### Statically Bundling Files
+
+You can also use `make-vfs` to generate a Typescript file that contains buffers
+or string representations of files such as images, markdown etc.
+
+```sh
+make-vfs --dir ./assets --content-format buffer --outfile bundle.js
+
+# If you're only bundling text files, use the "string" output format so you don't
+# need to deal with buffers!
+make-vfs --dir ./assets --content-format string --outfile bundle.js
+```
+
+The output format for these is just an object a `buffer` or `string` as values (depending
+on your selected `--content-format`)
+
+```ts
+export default {
+  "assets/file.txt": "hello world!",
+  "assets/some-other-file.md": "#Some Other File\nContent goes here"
+}
+```
+
+You can now import and use this file!
 
 ### Usage as Library
 
@@ -89,3 +143,11 @@ export default {
 you want to build an application with filesystem routes, after creating a new
 route or as a prebuild step you would just run `make-vfs ./src/routes ./src/routes.generated.ts`
 e.g. inside a package.json `prebuild` script.
+
+```json
+{
+  "scripts": {
+    "prebuild": "make-vfs --dir ./src/routes --content-format string --outfile asset-bundle.js"
+  }
+}
+```
