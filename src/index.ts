@@ -24,6 +24,7 @@ type ContentFormat =
   | "import-default"
   | "require"
   | "export-pathlist"
+  | "import-bunfile"
 
 interface SearchOpts {
   dirPath: string
@@ -133,6 +134,28 @@ export const getVirtualFilesystemModuleFromDirPath = async (
           .map((path) => `  "${path}"`)
           .join(",\n") +
         `\n]`
+      )
+    }
+    case "import-bunfile": {
+      if (!opts.targetPath)
+        throw new Error(
+          `targetPath is required when using content-format of require,import-default,import-star`
+        )
+      const basePath = path.relative(
+        path.dirname(opts.targetPath),
+        opts.dirPath
+      )
+      let fps = Object.keys(vfs)
+      return (
+        `${fps
+          .map((fp) =>
+            `import ${idsafe(fp)} from "./${path.join(basePath, fp)}" with { type: "file" };`
+          )
+          .join("\n")}\n\n` +
+        'import { file } from "bun";\n\n' + 
+        `export default {\n` +
+        fps.map((fp) => `  "${fp}": file(${idsafe(fp)})`).join(",\n") +
+        `\n}`
       )
     }
   }
