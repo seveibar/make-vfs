@@ -119,3 +119,23 @@ test("generate vfs from directory, content-format=export-pathlist", async (t) =>
 
   t.snapshot(moduleContent)
 })
+
+test("generate vfs from directory, content-format=import-bunfile", async (t) => {
+  mockFS({
+    "/app/noinclude.txt": "should not include",
+    "/app/somedir/file1.txt": "this is file1 content",
+    "/app/somedir/file2.js": "console.log('hello world')",
+    "/app/somedir/file3.png": "should not include",
+  })
+
+  const moduleContent = await getVirtualFilesystemModuleFromDirPath({
+    dirPath: "/app/somedir",
+    extensions: ["txt", "js"],
+    contentFormat: "import-bunfile",
+    targetPath: "/app/routes.ts",
+  })
+
+  mockFS.restore()
+
+  t.snapshot(moduleContent)
+})
