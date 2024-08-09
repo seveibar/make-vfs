@@ -33,6 +33,7 @@ const argv = yargs(hideBin(process.argv))
       "require",
       "export-pathlist",
       "import-bunfile",
+      "import-with",
     ],
     default: "buffer",
     description: "The format to store files in the vfs module.",
