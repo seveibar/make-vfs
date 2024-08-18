@@ -5,6 +5,7 @@ import { hideBin } from "yargs/helpers"
 import * as fs from "fs/promises"
 import mkdirp from "mkdirp"
 import path from "path"
+import gitignore from "../package-lock.json" with { type: "buffer" }
 
 const argv = yargs(hideBin(process.argv))
   .option("dir", {
@@ -33,6 +34,7 @@ const argv = yargs(hideBin(process.argv))
       "require",
       "export-pathlist",
       "import-bunfile",
+      "import-with",
     ],
     default: "buffer",
     description: "The format to store files in the vfs module.",
