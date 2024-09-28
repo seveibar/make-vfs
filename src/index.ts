@@ -1,6 +1,6 @@
 import glob from "glob-promise"
 import mkdirp from "mkdirp"
-import path from "path"
+import path from "path/posix"
 import prettier from "prettier"
 import { existsSync } from "fs"
 import fs from "fs/promises"
@@ -85,7 +85,9 @@ export const getVirtualFilesystemModuleFromDirPath = async (
         Object.entries(vfs)
           .map(([path, content]) =>
             cf === "buffer"
-              ? `  "${path}": Buffer.from("${content.toString("base64")}", "base64")`
+              ? `  "${path}": Buffer.from("${content.toString(
+                  "base64"
+                )}", "base64")`
               : `  "${path}": decodeURIComponent("${replaceSafeEncodedChars(
                   encodeURIComponent(content.toString())
                 )}")`
@@ -148,11 +150,15 @@ export const getVirtualFilesystemModuleFromDirPath = async (
       let fps = Object.keys(vfs)
       return (
         `${fps
-          .map((fp) =>
-            `import ${idsafe(fp)} from "./${path.join(basePath, fp)}" with { type: "file" };`
+          .map(
+            (fp) =>
+              `import ${idsafe(fp)} from "./${path.join(
+                basePath,
+                fp
+              )}" with { type: "file" };`
           )
           .join("\n")}\n\n` +
-        'import { file } from "bun";\n\n' + 
+        'import { file } from "bun";\n\n' +
         `export default {\n` +
         fps.map((fp) => `  "${fp}": file(${idsafe(fp)})`).join(",\n") +
         `\n}`
