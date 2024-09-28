@@ -1,6 +1,6 @@
 import glob from "glob-promise"
 import mkdirp from "mkdirp"
-import path from "path"
+import path from "path/posix"
 import prettier from "prettier"
 import { existsSync } from "fs"
 import fs from "fs/promises"
