@@ -1,6 +1,6 @@
 {
   "name": "make-vfs",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Easily make a virtual filesystem from a directory",
   "main": "dist/index.js",
   "files": [
