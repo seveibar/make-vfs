@@ -4,7 +4,7 @@ import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import * as fs from "fs/promises"
 import mkdirp from "mkdirp"
-import path from "path"
+import path from "path/posix"
 
 const argv = yargs(hideBin(process.argv))
   .option("dir", {
