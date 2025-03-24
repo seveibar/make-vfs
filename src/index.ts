@@ -1,6 +1,6 @@
 import glob from "glob-promise"
 import mkdirp from "mkdirp"
-import path from "path/posix"
+import path from "path"
 import prettier from "prettier"
 import { existsSync } from "fs"
 import fs from "fs/promises"
@@ -39,6 +39,19 @@ function idsafe(s: string) {
   return "_" + s.replace(/[^a-zA-Z0-9]/g, "_")
 }
 
+// Helper function to normalize paths to posix style
+const toPosixPath = (pathStr: string) => {
+  if (!pathStr) return pathStr
+  // Remove drive letter if present (e.g., C:)
+  pathStr = pathStr.replace(/^[A-Za-z]:/, '')
+  return pathStr.split(path.sep).join('/')
+}
+
+// Helper to join paths and normalize to posix
+const joinPath = (...parts: string[]) => {
+  return toPosixPath(path.join(...parts))
+}
+
 export const getMatchingFilePaths = async ({
   dirPath,
   extensions,
@@ -51,23 +64,38 @@ export const getMatchingFilePaths = async ({
       extensions.some((ext) => filename.endsWith(`.${ext}`))
   }
   if (!fileMatchFn) fileMatchFn = () => true
-  return (await glob("**/*", { cwd: dirPath, nodir: true })).filter(
-    (filename) => fileMatchFn!(filename, path.resolve(dirPath, filename))
-  )
+
+  const files = await glob("**/*", { 
+    cwd: dirPath,
+    nodir: true,
+    dot: true,
+    absolute: false,
+    windowsPathsNoEscape: true
+  })
+  
+  return files
+    .map(f => toPosixPath(f))
+    .filter(filename => fileMatchFn!(filename, path.join(dirPath, filename)))
 }
 
 export const getVirtualFileSystemFromDirPath = async (
   opts: SearchOpts
 ): Promise<Record<Path, Content>> => {
-  const { dirPath, contentFormat } = opts
+  const { dirPath, contentFormat = "string" } = opts
   const filePaths = await getMatchingFilePaths(opts)
   const vfs: Record<Path, Content> = {}
+  
   for (const filePath of filePaths) {
-    vfs[filePath] = await fs.readFile(path.resolve(dirPath, filePath))
-    if (contentFormat === "string") {
-      vfs[filePath] = vfs[filePath].toString()
+    try {
+      const fullPath = path.join(dirPath, filePath)
+      const content = await fs.readFile(fullPath)
+      const normalizedPath = toPosixPath(filePath)
+      vfs[normalizedPath] = content.toString()
+    } catch (err) {
+      console.error(`Failed to read file ${filePath}:`, err)
     }
   }
+  
   return vfs
 }
 
@@ -83,12 +111,12 @@ export const getVirtualFilesystemModuleFromDirPath = async (
       return (
         `export default {\n` +
         Object.entries(vfs)
-          .map(([path, content]) =>
+          .map(([filePath, content]) =>
             cf === "buffer"
-              ? `  "${path}": Buffer.from("${content.toString(
+              ? `  "${toPosixPath(filePath)}": Buffer.from("${content.toString(
                   "base64"
                 )}", "base64")`
-              : `  "${path}": decodeURIComponent("${replaceSafeEncodedChars(
+              : `  "${toPosixPath(filePath)}": decodeURIComponent("${replaceSafeEncodedChars(
                   encodeURIComponent(content.toString())
                 )}")`
           )
