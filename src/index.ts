@@ -86,14 +86,10 @@ export const getVirtualFileSystemFromDirPath = async (
   const vfs: Record<Path, Content> = {}
   
   for (const filePath of filePaths) {
-    try {
-      const fullPath = path.join(dirPath, filePath)
-      const content = await fs.readFile(fullPath)
-      const normalizedPath = toPosixPath(filePath)
-      vfs[normalizedPath] = content.toString()
-    } catch (err) {
-      console.error(`Failed to read file ${filePath}:`, err)
-    }
+    const fullPath = path.join(dirPath, filePath)
+    const content = await fs.readFile(fullPath)
+    const normalizedPath = toPosixPath(filePath)
+    vfs[normalizedPath] = content.toString()
   }
   
   return vfs
