@@ -151,3 +151,26 @@ e.g. inside a package.json `prebuild` script.
   }
 }
 ```
+
+### Using with Elysia
+
+You can statically bundle all of your Elysia route plugins with `make-vfs` so your server can be compiled into a single binary without runtime filesystem lookups:
+
+```sh
+make-vfs --dir ./routes --extensions ts --content-format import-default --no-import-ext --outfile ./src/routes.generated.ts
+```
+
+Then mount each statically bundled route module inside your `Elysia` instance:
+
+```ts
+import { Elysia } from "elysia"
+import routes from "./routes.generated"
+
+const app = new Elysia()
+
+for (const [routePath, routeModule] of Object.entries(routes)) {
+  app.use(routeModule as any)
+}
+
+app.listen(3000)
+```
