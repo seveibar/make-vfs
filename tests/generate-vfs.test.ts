@@ -1,15 +1,21 @@
 import test from "ava"
-import { getVirtualFileSystemFromDirPath } from "index"
+import {
+  getVirtualFileSystemFromDirPath,
+  getVirtualFilesystemModuleFromDirPath,
+} from "index"
 import fs from "fs/promises"
 import path from "path"
 import os from "os"
 
 const createTempDir = async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'vfs-test-'))
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "vfs-test-"))
   return tempDir
 }
 
-const setupTestDir = async (basePath: string, files: Record<string, string>) => {
+const setupTestDir = async (
+  basePath: string,
+  files: Record<string, string>
+) => {
   for (const [filePath, content] of Object.entries(files)) {
     const fullPath = path.join(basePath, filePath)
     await fs.mkdir(path.dirname(fullPath), { recursive: true })
@@ -20,11 +26,11 @@ const setupTestDir = async (basePath: string, files: Record<string, string>) => 
 test("generate vfs from directory", async (t) => {
   const basePath = await createTempDir()
   await setupTestDir(basePath, {
-    'file1.txt': 'this is file1 content',
-    'file2.js': 'console.log("hello world")',
-    'file3.png': 'should not include'
+    "file1.txt": "this is file1 content",
+    "file2.js": 'console.log("hello world")',
+    "file3.png": "should not include",
   })
-  
+
   const vfs = await getVirtualFileSystemFromDirPath({
     dirPath: basePath,
     extensions: ["txt", "js"],
@@ -41,11 +47,11 @@ test("generate vfs from directory", async (t) => {
 test("generate vfs from directory with Windows paths", async (t) => {
   const basePath = await createTempDir()
   await setupTestDir(basePath, {
-    'file1.txt': 'this is file1 content',
-    'file2.js': 'console.log("hello world")',
-    'file3.png': 'should not include'
+    "file1.txt": "this is file1 content",
+    "file2.js": 'console.log("hello world")',
+    "file3.png": "should not include",
   })
-  
+
   const vfs = await getVirtualFileSystemFromDirPath({
     dirPath: basePath,
     extensions: ["txt", "js"],
@@ -62,10 +68,10 @@ test("generate vfs from directory with Windows paths", async (t) => {
 test("generate vfs from directory with nested Windows paths", async (t) => {
   const basePath = await createTempDir()
   await setupTestDir(basePath, {
-    'nested/file1.txt': 'nested file1 content',
-    'nested/deeper/file2.js': 'console.log("nested")'
+    "nested/file1.txt": "nested file1 content",
+    "nested/deeper/file2.js": 'console.log("nested")',
   })
-  
+
   const vfs = await getVirtualFileSystemFromDirPath({
     dirPath: basePath,
     extensions: ["txt", "js"],
@@ -74,6 +80,25 @@ test("generate vfs from directory with nested Windows paths", async (t) => {
   t.is(vfs["nested/file1.txt"], "nested file1 content")
   t.is(vfs["nested/deeper/file2.js"], 'console.log("nested")')
   t.is(Object.keys(vfs).length, 2)
+
+  await fs.rm(basePath, { recursive: true, force: true })
+})
+
+test("generate vfs module with Windows paths preserves POSIX import paths", async (t) => {
+  const basePath = await createTempDir()
+  await setupTestDir(basePath, {
+    "subdir/file1.ts": "export const a = 1",
+  })
+
+  const targetPath = path.join(basePath, "output", "vfs.ts")
+  const moduleContent = await getVirtualFilesystemModuleFromDirPath({
+    dirPath: path.join(basePath, "subdir"),
+    targetPath,
+    contentFormat: "import-default",
+  })
+
+  t.true(moduleContent.includes('import _file1_ts from "../subdir/file1.ts"'))
+  t.false(moduleContent.includes("\\"))
 
   await fs.rm(basePath, { recursive: true, force: true })
 })
