@@ -43,8 +43,20 @@ function idsafe(s: string) {
 const toPosixPath = (pathStr: string) => {
   if (!pathStr) return pathStr
   // Remove drive letter if present (e.g., C:)
-  pathStr = pathStr.replace(/^[A-Za-z]:/, '')
-  return pathStr.split(path.sep).join('/')
+  pathStr = pathStr.replace(/^[A-Za-z]:/, "")
+  return pathStr.replace(/\\/g, "/")
+}
+
+const getPosixImportPath = (
+  targetPath: string,
+  dirPath: string,
+  filePath: string
+) => {
+  const fromDir = toPosixPath(path.dirname(targetPath))
+  const toDir = toPosixPath(dirPath)
+  const relBase = path.posix.relative(fromDir, toDir)
+  const relFile = path.posix.join(relBase, toPosixPath(filePath))
+  return relFile.startsWith(".") ? relFile : `./${relFile}`
 }
 
 // Helper to join paths and normalize to posix
@@ -127,23 +139,20 @@ export const getVirtualFilesystemModuleFromDirPath = async (
         throw new Error(
           `targetPath is required when using content-format of require,import-default,import-star`
         )
-      const basePath = path.relative(
-        path.dirname(opts.targetPath),
-        opts.dirPath
-      )
       let fps = Object.keys(vfs)
       if (opts.noImportExt) {
         fps = fps.map((fp) => fp.replace(/\.[^.]+$/, ""))
       }
       return (
         `${fps
-          .map((fp) =>
-            cf === "require"
-              ? `const ${idsafe(fp)} = require("./${path.join(basePath, fp)}")`
+          .map((fp) => {
+            const importPath = getPosixImportPath(opts.targetPath!, opts.dirPath, fp)
+            return cf === "require"
+              ? `const ${idsafe(fp)} = require("${importPath}")`
               : cf === "import-default"
-              ? `import ${idsafe(fp)} from "./${path.join(basePath, fp)}"`
-              : `import * as ${idsafe(fp)} from "./${path.join(basePath, fp)}"`
-          )
+              ? `import ${idsafe(fp)} from "${importPath}"`
+              : `import * as ${idsafe(fp)} from "${importPath}"`
+          })
           .join("\n")}\n\n` +
         `export default {\n` +
         fps.map((fp) => `  "${fp}": ${idsafe(fp)}`).join(",\n") +
@@ -167,20 +176,13 @@ export const getVirtualFilesystemModuleFromDirPath = async (
         throw new Error(
           `targetPath is required when using content-format of require,import-default,import-star`
         )
-      const basePath = path.relative(
-        path.dirname(opts.targetPath),
-        opts.dirPath
-      )
       let fps = Object.keys(vfs)
       return (
         `${fps
-          .map(
-            (fp) =>
-              `import ${idsafe(fp)} from "./${path.join(
-                basePath,
-                fp
-              )}" with { type: "file" };`
-          )
+          .map((fp) => {
+            const importPath = getPosixImportPath(opts.targetPath!, opts.dirPath, fp)
+            return `import ${idsafe(fp)} from "${importPath}" with { type: "file" };`
+          })
           .join("\n")}\n\n` +
         'import { file } from "bun";\n\n' +
         `export default {\n` +

@@ -4,7 +4,7 @@ import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import * as fs from "fs/promises"
 import mkdirp from "mkdirp"
-import path from "path/posix"
+import path from "path"
 
 const argv = yargs(hideBin(process.argv))
   .option("dir", {
@@ -73,7 +73,7 @@ async function main() {
     console.log(opts)
   }
 
-  await mkdirp(path.dirname(outfile))
+  await mkdirp(path.dirname(path.resolve(outfile)))
   await fs.writeFile(outfile, await getVirtualFilesystemModuleFromDirPath(opts))
 }
 
