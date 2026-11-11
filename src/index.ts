@@ -1,8 +1,7 @@
-import glob from "glob-promise"
 import mkdirp from "mkdirp"
 import path from "path"
 import prettier from "prettier"
-import { existsSync } from "fs"
+import { existsSync, type Dirent } from "fs"
 import fs from "fs/promises"
 
 const charsSafeToLeaveEncoded = "{}.,<>?/:'[]!@#$^&*() -_=+".split("")
@@ -43,13 +42,77 @@ function idsafe(s: string) {
 const toPosixPath = (pathStr: string) => {
   if (!pathStr) return pathStr
   // Remove drive letter if present (e.g., C:)
-  pathStr = pathStr.replace(/^[A-Za-z]:/, '')
-  return pathStr.split(path.sep).join('/')
+  pathStr = pathStr.replace(/^[A-Za-z]:/, "")
+  return pathStr.split(path.sep).join("/")
 }
 
 // Helper to join paths and normalize to posix
 const joinPath = (...parts: string[]) => {
   return toPosixPath(path.join(...parts))
+}
+
+const collectRelativeFiles = async (
+  currentDir: string,
+  relativePrefix: string,
+  visitedDirs: Set<string>,
+  results: string[]
+) => {
+  let entries: Dirent[]
+  try {
+    entries = await fs.readdir(currentDir, { withFileTypes: true })
+  } catch (error: any) {
+    if (
+      error?.code === "ENOENT" ||
+      error?.code === "ENOTDIR" ||
+      error?.code === "EACCES" ||
+      error?.code === "EPERM"
+    ) {
+      return
+    }
+    throw error
+  }
+  entries.sort((a, b) => a.name.localeCompare(b.name))
+
+  for (const entry of entries) {
+    const fullEntryPath = path.join(currentDir, entry.name)
+    const relPosixPath = relativePrefix
+      ? `${relativePrefix}/${entry.name}`
+      : entry.name
+
+    if (entry.isDirectory()) {
+      const realDir = await fs
+        .realpath(fullEntryPath)
+        .catch(() => path.resolve(fullEntryPath))
+      if (visitedDirs.has(realDir)) continue
+      visitedDirs.add(realDir)
+      await collectRelativeFiles(
+        fullEntryPath,
+        relPosixPath,
+        visitedDirs,
+        results
+      )
+    } else if (entry.isFile()) {
+      results.push(relPosixPath)
+    } else if (entry.isSymbolicLink()) {
+      const stat = await fs.stat(fullEntryPath).catch(() => null)
+      if (!stat) continue
+      if (stat.isFile()) {
+        results.push(relPosixPath)
+      } else if (stat.isDirectory()) {
+        const realDir = await fs
+          .realpath(fullEntryPath)
+          .catch(() => path.resolve(fullEntryPath))
+        if (visitedDirs.has(realDir)) continue
+        visitedDirs.add(realDir)
+        await collectRelativeFiles(
+          fullEntryPath,
+          relPosixPath,
+          visitedDirs,
+          results
+        )
+      }
+    }
+  }
 }
 
 export const getMatchingFilePaths = async ({
@@ -65,17 +128,15 @@ export const getMatchingFilePaths = async ({
   }
   if (!fileMatchFn) fileMatchFn = () => true
 
-  const files = await glob("**/*", { 
-    cwd: dirPath,
-    nodir: true,
-    dot: true,
-    absolute: false,
-    windowsPathsNoEscape: true
-  })
-  
+  const visitedDirs = new Set<string>([
+    await fs.realpath(dirPath).catch(() => path.resolve(dirPath)),
+  ])
+  const files: string[] = []
+  await collectRelativeFiles(dirPath, "", visitedDirs, files)
+
   return files
-    .map(f => toPosixPath(f))
-    .filter(filename => fileMatchFn!(filename, path.join(dirPath, filename)))
+    .map((f) => toPosixPath(f))
+    .filter((filename) => fileMatchFn!(filename, path.join(dirPath, filename)))
 }
 
 export const getVirtualFileSystemFromDirPath = async (
@@ -84,14 +145,14 @@ export const getVirtualFileSystemFromDirPath = async (
   const { dirPath, contentFormat = "string" } = opts
   const filePaths = await getMatchingFilePaths(opts)
   const vfs: Record<Path, Content> = {}
-  
+
   for (const filePath of filePaths) {
     const fullPath = path.join(dirPath, filePath)
     const content = await fs.readFile(fullPath)
     const normalizedPath = toPosixPath(filePath)
     vfs[normalizedPath] = content.toString()
   }
-  
+
   return vfs
 }
 
@@ -112,7 +173,9 @@ export const getVirtualFilesystemModuleFromDirPath = async (
               ? `  "${toPosixPath(filePath)}": Buffer.from("${content.toString(
                   "base64"
                 )}", "base64")`
-              : `  "${toPosixPath(filePath)}": decodeURIComponent("${replaceSafeEncodedChars(
+              : `  "${toPosixPath(
+                  filePath
+                )}": decodeURIComponent("${replaceSafeEncodedChars(
                   encodeURIComponent(content.toString())
                 )}")`
           )
